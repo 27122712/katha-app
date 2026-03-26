@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { saveWisdom } from '@/app/actions'; // Import the new action
+import { saveWisdom } from '../app/actions';
 
 export default function MindSeeder({ email }: { email: string }) {
   const [thought, setThought] = useState('');
