@@ -16,7 +16,7 @@ type ChatMessage =
 
 // Use require for the legacy pdf-parse library
 // @ts-ignore
-const pdf = require('pdf-parse');
+const pdf = require('pdf-parse-fork');
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
