@@ -1,14 +1,16 @@
 'use server'
 
 import { db } from '@/lib/db';
-import { writeFile, mkdir, unlink } from 'fs/promises'; // Added unlink here
+import { writeFile, mkdir, unlink } from 'fs/promises';
 import { existsSync, createReadStream } from 'fs';
 import path from 'path';
 import nodemailer from 'nodemailer';
 import Groq from "groq-sdk"; 
 import * as XLSX from 'xlsx';
-import pdf from 'pdf-parse-fork'; // Use standard import
+// @ts-ignore
+import pdf from 'pdf-parse-fork';
 
+// 1. Types for AI Chat
 type ChatMessage = 
   | { role: 'system'; content: string }
   | { role: 'user'; content: string }
@@ -20,11 +22,11 @@ const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: 'kathasystems@gmail.com',
-    pass: process.env.EMAIL_PASS, // Use env variable for safety!
+    pass: process.env.EMAIL_PASS, 
   },
 });
 
-// ... (talkToLegacy, saveWisdom, loginUser functions remain the same)
+/* --- 1. USER AUTH & REGISTRATION --- */
 
 export async function registerUser(formData: FormData) {
   const name = formData.get('name') as string;
@@ -41,9 +43,21 @@ export async function registerUser(formData: FormData) {
     return { success: true };
   } catch (error: any) { 
     console.error("Reg Error:", error);
-    return { error: "Registration failed. Database might be busy." }; 
+    return { error: "Registration failed. Email might already exist." }; 
   }
 }
+
+export async function loginUser(formData: FormData) {
+  const email = formData.get('email') as string;
+  const password = formData.get('password') as string;
+  try {
+    const [rows]: any = await db.execute('SELECT * FROM users WHERE email = ? AND password = ?', [email, password]);
+    if (rows[0]) return { success: true, user: { name: rows[0].name, email: rows[0].email } };
+    return { error: "Invalid credentials" };
+  } catch (error) { return { error: "Login failed" }; }
+}
+
+/* --- 2. VAULT MANAGEMENT --- */
 
 export async function uploadToVault(formData: FormData, userEmail: string) {
   const file = formData.get('file') as File;
@@ -58,7 +72,7 @@ export async function uploadToVault(formData: FormData, userEmail: string) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // FIXED FOR VERCEL: Use /tmp for temporary processing
+    // VERCEL FIX: Use /tmp for processing
     const uploadDir = '/tmp'; 
     const filePath = path.join(uploadDir, file.name);
     await writeFile(filePath, buffer);
@@ -123,9 +137,7 @@ export async function uploadToVault(formData: FormData, userEmail: string) {
       [userEmail, file.name, file.type, aiSummary]
     );
 
-    // Clean up the temp file
     await unlink(filePath);
-
     return { success: true, fileName: file.name };
   } catch (error: any) { 
     console.error("Vault Error:", error);
@@ -133,4 +145,97 @@ export async function uploadToVault(formData: FormData, userEmail: string) {
   }
 }
 
-// ... (Other functions remain the same)
+export async function getUserVault(email: string) {
+  try {
+    const [rows]: any = await db.execute(
+      'SELECT id, file_name, file_type, ai_summary, uploaded_at FROM vault WHERE user_email = ? ORDER BY uploaded_at DESC', 
+      [email]
+    );
+    return { success: true, files: rows };
+  } catch (error) {
+    return { error: "Failed to load vault." };
+  }
+}
+
+export async function deleteFromVault(fileId: number) {
+  try {
+    await db.execute('DELETE FROM vault WHERE id = ?', [fileId]);
+    return { success: true };
+  } catch (error) {
+    return { error: "Failed to delete item." };
+  }
+}
+
+/* --- 3. LEGACY CHAT (THE DIGITAL SOUL) --- */
+
+export async function talkToLegacy(
+  targetEmail: string, 
+  message: string, 
+  history: { role: string, content: string }[] = []
+) {
+  try {
+    const [userRows]: any = await db.execute(
+      'SELECT name, personality_traits, life_philosophy FROM users WHERE email = ?', 
+      [targetEmail]
+    );
+    const user = userRows[0];
+    if (!user) return { error: "Soul not found." };
+
+    const [vaultRows]: any = await db.execute(
+      'SELECT file_name, ai_summary FROM vault WHERE user_email = ?', 
+      [targetEmail]
+    );
+
+    const memoryList = vaultRows.map((f: any) => `- ${f.file_name}: ${f.ai_summary}`).join("\n");
+
+    const messages: ChatMessage[] = [
+      { 
+        role: "system", 
+        content: `You are ${user.name}. Traits: ${user.personality_traits}. Philosophy: ${user.life_philosophy}. Memories: ${memoryList}` 
+      },
+      ...history.slice(-6).map(msg => ({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content
+      })),
+      { role: "user", content: message }
+    ];
+
+    const chatCompletion = await groq.chat.completions.create({
+      messages: messages as any,
+      model: "llama-3.3-70b-versatile",
+    });
+
+    return { success: true, text: chatCompletion.choices[0].message.content };
+  } catch (error) {
+    return { error: "The connection to the legacy is weak." };
+  }
+}
+
+/* --- 4. ADMIN & PREMIUM FEATURES --- */
+
+export async function getAdminStats() {
+  try {
+    const [users]: any = await db.execute('SELECT id, name, email, role FROM users');
+    const [vaultFiles]: any = await db.execute('SELECT * FROM vault');
+    return { success: true, users, vaultFiles };
+  } catch (error) { return { error: "Failed to fetch admin data" }; }
+}
+
+export async function upgradeToPremium(email: string) {
+  try {
+    await db.execute('UPDATE users SET role = ? WHERE email = ?', ['premium', email]);
+    return { success: true };
+  } catch (error) { return { error: "Upgrade failed." }; }
+}
+export async function saveWisdom(email: string, thought: string) {
+  try {
+    await db.execute(
+      'UPDATE users SET life_philosophy = CONCAT(IFNULL(life_philosophy, ""), ?) WHERE email = ?',
+      [`\n- ${thought}`, email]
+    );
+    return { success: true };
+  } catch (error) {
+    console.error("Save Wisdom Error:", error);
+    return { error: "Failed to seed wisdom." };
+  }
+}
