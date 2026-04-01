@@ -18,13 +18,13 @@ type ChatMessage =
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: 'kathasystems@gmail.com',
-    pass: process.env.EMAIL_PASS, 
-  },
-});
+// const transporter = nodemailer.createTransport({
+//   service: 'gmail',
+//   auth: {
+//     user: 'kathasystems@gmail.com',
+//     pass: process.env.EMAIL_PASS, 
+//   },
+// });
 
 /* --- 1. USER AUTH & REGISTRATION --- */
 
