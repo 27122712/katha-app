@@ -20,10 +20,15 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
   auth: {
     user: 'kathasystems@gmail.com',
     pass: process.env.EMAIL_PASS, 
   },
+  // This prevents Vercel from killing the function too early
+  connectionTimeout: 10000, 
 });
 
 /* --- 1. USER AUTH & REGISTRATION --- */

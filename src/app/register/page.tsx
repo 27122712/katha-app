@@ -1,7 +1,8 @@
 'use client';
+
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation'; // For redirecting after success
+import { useRouter } from 'next/navigation';
 import { registerUser } from '../actions';
 import { User, Mail, Lock, Sparkles, Quote, Loader2 } from 'lucide-react';
 
@@ -16,16 +17,22 @@ export default function RegisterPage() {
     setMsg({ type: '', text: '' });
 
     const formData = new FormData(event.currentTarget);
-    const result = await registerUser(formData);
+    
+    try {
+      const result = await registerUser(formData);
 
-    if (result.success) {
-      setMsg({ type: 'success', text: 'Legacy Seeded! Redirecting to login...' });
-      // Clear form and redirect after a short delay
-      setTimeout(() => {
-        router.push('/login');
-      }, 2000);
-    } else {
-      setMsg({ type: 'error', text: result.error || 'Registration failed' });
+      if (result.success) {
+        setMsg({ type: 'success', text: 'Legacy Seeded! Redirecting to login...' });
+        // Delay redirect so user can see the success message
+        setTimeout(() => {
+          router.push('/login');
+        }, 2500);
+      } else {
+        setMsg({ type: 'error', text: result.error || 'Registration failed' });
+        setLoading(false);
+      }
+    } catch (error) {
+      setMsg({ type: 'error', text: 'A connection error occurred. Please try again.' });
       setLoading(false);
     }
   }
@@ -33,25 +40,45 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 py-20">
       <div className="max-w-xl w-full bg-white rounded-[2.5rem] shadow-xl p-10 border border-slate-100">
-        <h1 className="text-2xl font-bold text-slate-900 mb-2">Create Account</h1>
-        <p className="text-slate-500 text-sm mb-8">Start securing your digital heritage today.</p>
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">Create Account</h1>
+          <p className="text-slate-500 text-sm">Start securing your digital heritage today.</p>
+        </div>
 
         <form onSubmit={onFormSubmit} className="space-y-6">
           {/* --- BASIC INFO --- */}
           <div className="grid md:grid-cols-2 gap-4">
             <div className="relative">
               <User className="absolute left-4 top-4 text-slate-400" size={18} />
-              <input name="name" type="text" placeholder="Full Name" required className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition" />
+              <input 
+                name="name" 
+                type="text" 
+                placeholder="Full Name" 
+                required 
+                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition" 
+              />
             </div>
             <div className="relative">
               <Mail className="absolute left-4 top-4 text-slate-400" size={18} />
-              <input name="email" type="email" placeholder="Email Address" required className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition" />
+              <input 
+                name="email" 
+                type="email" 
+                placeholder="Email Address" 
+                required 
+                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition" 
+              />
             </div>
           </div>
 
           <div className="relative">
             <Lock className="absolute left-4 top-4 text-slate-400" size={18} />
-            <input name="password" type="password" placeholder="Create Password" required className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition" />
+            <input 
+              name="password" 
+              type="password" 
+              placeholder="Create Password" 
+              required 
+              className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition" 
+            />
           </div>
 
           {/* --- SOUL SEEDING SECTION --- */}
@@ -66,8 +93,8 @@ export default function RegisterPage() {
                <textarea 
                  name="traits" 
                  required
-                 placeholder="How would your loved ones describe you?" 
-                 className="w-full p-4 bg-white border border-blue-100 rounded-2xl outline-none text-sm min-h-[100px] focus:ring-2 focus:ring-blue-500 transition"
+                 placeholder="How would your loved ones describe you? (e.g. witty, calm, tech-enthusiast)" 
+                 className="w-full p-4 bg-white border border-blue-100 rounded-2xl outline-none text-sm min-h-[100px] focus:ring-2 focus:ring-blue-500 transition resize-none"
                />
              </div>
 
@@ -78,15 +105,17 @@ export default function RegisterPage() {
                  <textarea 
                    name="philosophy" 
                    required
-                   placeholder="What advice should your legacy carry forward?" 
-                   className="w-full pl-12 pr-4 py-4 bg-white border border-blue-100 rounded-2xl outline-none text-sm min-h-[100px] focus:ring-2 focus:ring-blue-500 transition"
+                   placeholder="What is one piece of advice you want to leave behind?" 
+                   className="w-full pl-12 pr-4 py-4 bg-white border border-blue-100 rounded-2xl outline-none text-sm min-h-[100px] focus:ring-2 focus:ring-blue-500 transition resize-none"
                  />
                </div>
              </div>
           </div>
           
           {msg.text && (
-            <div className={`p-4 rounded-xl text-center text-xs font-bold ${msg.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+            <div className={`p-4 rounded-xl text-center text-xs font-bold animate-in fade-in zoom-in-95 duration-300 ${
+              msg.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+            }`}>
               {msg.text}
             </div>
           )}
@@ -96,8 +125,14 @@ export default function RegisterPage() {
             disabled={loading}
             className="w-full bg-slate-900 text-white py-5 rounded-2xl font-bold hover:bg-slate-800 transition shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3"
           >
-            {loading && <Loader2 className="animate-spin" size={20} />}
-            {loading ? 'Seeding Legacy...' : 'Register & Seed My Legacy'}
+            {loading ? (
+              <>
+                <Loader2 className="animate-spin" size={20} />
+                <span>Seeding Legacy...</span>
+              </>
+            ) : (
+              <span>Register & Seed My Legacy</span>
+            )}
           </button>
         </form>
 
