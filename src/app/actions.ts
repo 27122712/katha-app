@@ -252,6 +252,23 @@ export async function upgradeToPremium(email: string) {
     return { success: true };
   } catch (error) { return { error: "Upgrade failed." }; }
 }
+export async function checkPremiumStatus(email: string) {
+  try {
+    const [rows]: any = await db.execute(
+      'SELECT role FROM users WHERE email = ?',
+      [email]
+    );
+    
+    // Check if the user exists and if their role is 'premium' or 'admin'
+    const isPremium = rows[0]?.role === 'premium' || rows[0]?.role === 'admin';
+    
+    return { success: true, isPremium };
+  } catch (error) {
+    console.error("Status Check Error:", error);
+    return { success: false, error: "Failed to check status" };
+  }
+}
+
 export async function saveWisdom(email: string, thought: string) {
   try {
     await db.execute(
