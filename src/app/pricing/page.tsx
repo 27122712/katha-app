@@ -1,8 +1,13 @@
 'use client';
 
+// 1. CRITICAL: Tell Vercel to skip static pre-rendering for this page
+export const dynamic = 'force-dynamic';
+
 import React, { useState, useEffect } from 'react';
 import { Check, ShieldCheck, Crown, Loader2, Lock, X } from 'lucide-react';
 import Link from 'next/link';
+// 2. Import Script from Next.js to load Razorpay SDK
+import Script from 'next/script';
 import { checkPremiumStatus, upgradeToPremium, loginUser } from '../actions'; 
 
 export default function Pricing() {
@@ -62,12 +67,13 @@ export default function Pricing() {
 
   const triggerRazorpay = (user: any) => {
     if (!(window as any).Razorpay) {
-      alert("Razorpay SDK is still loading.");
+      alert("Razorpay SDK is still loading. Please wait a moment.");
       return;
     }
 
     const options = {
-      key: "rzp_test_XXXXXXXXXXXXXX", // YOUR KEY
+      // PRO TIP: In Vercel, use process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
+      key: "rzp_test_XXXXXXXXXXXXXX", 
       amount: 2900, 
       currency: "INR",
       name: "KATHA",
@@ -103,6 +109,12 @@ export default function Pricing() {
   return (
     <div className="bg-white text-slate-900 w-full min-h-screen selection:bg-blue-100 pb-16 pt-24 relative">
       
+      {/* 3. Load the Razorpay SDK script securely */}
+      <Script
+        id="razorpay-checkout-js"
+        src="https://checkout.razorpay.com/v1/checkout.js"
+      />
+
       {/* VERIFICATION MODAL */}
       {showVerify && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-6">

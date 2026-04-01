@@ -46,6 +46,31 @@ export async function registerUser(formData: FormData) {
     return { error: "Registration failed. Email might already exist." }; 
   }
 }
+export async function getUserDetails(email: string) {
+  try {
+    // 1. Get user basic info
+    const [userRows]: any = await db.execute(
+      'SELECT name, email, role FROM users WHERE email = ?', 
+      [email]
+    );
+    
+    // 2. Get user vault files
+    const [fileRows]: any = await db.execute(
+      'SELECT id, file_name, file_type, ai_summary FROM vault WHERE user_email = ?', 
+      [email]
+    );
+
+    if (!userRows[0]) return { error: "User not found" };
+
+    return { 
+      success: true, 
+      user: userRows[0], 
+      files: fileRows 
+    };
+  } catch (error) {
+    return { error: "Failed to fetch user details" };
+  }
+}
 
 export async function loginUser(formData: FormData) {
   const email = formData.get('email') as string;
