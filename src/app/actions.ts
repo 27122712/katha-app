@@ -9,6 +9,7 @@ import Groq from "groq-sdk";
 import * as XLSX from 'xlsx';
 // @ts-ignore
 import pdf from 'pdf-parse-fork';
+import { put } from '@vercel/blob';
 
 // 1. Types for AI Chat
 type ChatMessage = 
@@ -102,10 +103,11 @@ export async function uploadToVault(formData: FormData, userEmail: string) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // VERCEL FIX: Use /tmp for processing
-    const uploadDir = '/tmp'; 
-    const filePath = path.join(uploadDir, file.name);
-    await writeFile(filePath, buffer);
+    // --- NEW: Upload directly to Vercel Blob ---
+    const blob = await put(file.name, buffer, {
+      access: 'public',
+    });
+    // --------------------------------------------
 
     let extractedText = "";
 
@@ -141,15 +143,19 @@ export async function uploadToVault(formData: FormData, userEmail: string) {
       }
     }
     else if (file.type.startsWith("video/")) {
+      // Note: Video processing still uses /tmp briefly for Whisper API
+      const tempPath = path.join('/tmp', file.name);
+      await writeFile(tempPath, buffer);
       try {
         const transcription = await groq.audio.transcriptions.create({
-          file: createReadStream(filePath),
+          file: createReadStream(tempPath),
           model: "whisper-large-v3",
         });
         extractedText = transcription.text || `A video named ${file.name}`;
       } catch (err) {
         extractedText = `I preserved a video titled ${file.name}`;
       }
+      await unlink(tempPath);
     }
 
     const summaryResponse = await groq.chat.completions.create({
@@ -162,12 +168,12 @@ export async function uploadToVault(formData: FormData, userEmail: string) {
 
     const aiSummary = summaryResponse.choices[0].message.content || `I saved: ${file.name}`;
 
+    // --- UPDATED: Save the blob.url to the database ---
     await db.execute(
-      'INSERT INTO vault (user_email, file_name, file_type, ai_summary) VALUES (?, ?, ?, ?)',
-      [userEmail, file.name, file.type, aiSummary]
+      'INSERT INTO vault (user_email, file_name, file_type, ai_summary, file_url) VALUES (?, ?, ?, ?, ?)',
+      [userEmail, file.name, file.type, aiSummary, blob.url]
     );
 
-    await unlink(filePath);
     return { success: true, fileName: file.name };
   } catch (error: any) { 
     console.error("Vault Error:", error);
@@ -178,11 +184,13 @@ export async function uploadToVault(formData: FormData, userEmail: string) {
 export async function getUserVault(email: string) {
   try {
     const [rows]: any = await db.execute(
-      'SELECT id, file_name, file_type, ai_summary, uploaded_at FROM vault WHERE user_email = ? ORDER BY uploaded_at DESC', 
+      // Added file_url to the query
+      'SELECT id, file_name, file_type, ai_summary, file_url, uploaded_at FROM vault WHERE user_email = ? ORDER BY uploaded_at DESC', 
       [email]
     );
     return { success: true, files: rows };
   } catch (error) {
+    console.error("Fetch Error:", error);
     return { error: "Failed to load vault." };
   }
 }
