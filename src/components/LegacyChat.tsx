@@ -72,25 +72,41 @@ export default function LegacyChat({
     else recognition.start();
   };
 
-  const handleTalk = async () => {
+const handleTalk = async () => {
+    // 1. Double check locally before even trying to call the server
     if (!input || isLimitReached) return;
+    
     setLoading(true);
 
-    const result = await talkToLegacy(targetUser.email, input, history);
+    try {
+      // 2. Call the updated talkToLegacy action
+      const result = await talkToLegacy(targetUser.email, input, history);
 
-    if (result.success) {
-      const newMessages: Message[] = [
-        ...history,
-        { role: "user", content: input },
-        { role: "assistant", content: result.text || "" }
-      ];
-      setHistory(newMessages);
-    } else {
-      alert(result.error);
+      if (result.success) {
+        // 3. Update the chat history locally if the message was allowed
+        const newMessages: Message[] = [
+          ...history,
+          { role: "user", content: input },
+          { role: "assistant", content: result.text || "" }
+        ];
+        setHistory(newMessages);
+      } 
+      // 4. Handle the specific Paywall error from the Database
+      else if (result.error === "FREE_LIMIT_REACHED") {
+        alert("You've reached the free conversation limit. Upgrade to Premium to continue seeding your legacy!");
+        // Optional: Force the page to refresh or redirect to pricing
+        // window.location.href = '/pricing';
+      } 
+      else {
+        // Handle other errors (API issues, etc.)
+        alert(result.error || "The connection to the legacy was interrupted.");
+      }
+    } catch (err) {
+      alert("System error. Please try again later.");
+    } finally {
+      setLoading(false);
+      setInput(""); 
     }
-    
-    setLoading(false);
-    setInput(""); 
   };
 
   return (

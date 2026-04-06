@@ -285,6 +285,7 @@ function HomeContent() {
               <source src="/img_videos/demo.mp4" type="video/mp4" />
               Your browser does not support the video tag.
             </video>
+            <div className="absolute inset-0 z-10 bg-transparent" onContextMenu={(e) => e.preventDefault()}></div>
 
             <button
               onClick={() => setIsMuted(!isMuted)}

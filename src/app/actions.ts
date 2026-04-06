@@ -212,13 +212,22 @@ export async function talkToLegacy(
   history: { role: string, content: string }[] = []
 ) {
   try {
+    // 1. Get user info AND their current chat count & role
     const [userRows]: any = await db.execute(
-      'SELECT name, personality_traits, life_philosophy FROM users WHERE email = ?', 
+      'SELECT name, personality_traits, life_philosophy, role, chat_count FROM users WHERE email = ?', 
       [targetEmail]
     );
     const user = userRows[0];
+    
     if (!user) return { error: "Soul not found." };
 
+    // 2. PAYWALL LOGIC: Check if user is on Free plan and has used 2 or more chats
+    const isPremium = user.role === 'premium' || user.role === 'admin';
+    if (!isPremium && user.chat_count >= 2) {
+      return { error: "FREE_LIMIT_REACHED" };
+    }
+
+    // 3. Get Vault Memories to feed the AI context
     const [vaultRows]: any = await db.execute(
       'SELECT file_name, ai_summary FROM vault WHERE user_email = ?', 
       [targetEmail]
@@ -226,10 +235,11 @@ export async function talkToLegacy(
 
     const memoryList = vaultRows.map((f: any) => `- ${f.file_name}: ${f.ai_summary}`).join("\n");
 
+    // 4. Prepare the AI prompt
     const messages: ChatMessage[] = [
       { 
         role: "system", 
-        content: `You are ${user.name}. Traits: ${user.personality_traits}. Philosophy: ${user.life_philosophy}. Memories: ${memoryList}` 
+        content: `You are ${user.name}. Traits: ${user.personality_traits}. Philosophy: ${user.life_philosophy}. Memories: ${memoryList}. Respond in first person.` 
       },
       ...history.slice(-6).map(msg => ({
         role: msg.role as 'user' | 'assistant',
@@ -238,14 +248,26 @@ export async function talkToLegacy(
       { role: "user", content: message }
     ];
 
+    // 5. Generate AI Response
     const chatCompletion = await groq.chat.completions.create({
       messages: messages as any,
       model: "llama-3.3-70b-versatile",
     });
 
-    return { success: true, text: chatCompletion.choices[0].message.content };
-  } catch (error) {
-    return { error: "The connection to the legacy is weak." };
+    const aiResponse = chatCompletion.choices[0].message.content;
+
+    // 6. SUCCESS: Increment the chat count in the database
+    // This ensures reloads don't reset the free limit.
+    await db.execute(
+      'UPDATE users SET chat_count = chat_count + 1 WHERE email = ?',
+      [targetEmail]
+    );
+
+    return { success: true, text: aiResponse };
+    
+  } catch (error: any) {
+    console.error("Chat Error:", error);
+    return { error: "The connection to the legacy is weak. Check your API keys." };
   }
 }
 
