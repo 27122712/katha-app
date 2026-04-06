@@ -283,24 +283,61 @@ export async function getAdminStats() {
 
 export async function upgradeToPremium(email: string) {
   try {
-    await db.execute('UPDATE users SET role = ? WHERE email = ?', ['premium', email]);
+    // 1. Calculate the expiration date (Current Time + 30 Days)
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 30);
+
+    // 2. Update the user to 'premium' and set the expiration timestamp
+    // We use the SQL format for DATETIME: YYYY-MM-DD HH:MM:SS
+    const formattedDate = expiryDate.toISOString().slice(0, 19).replace('T', ' ');
+
+    await db.execute(
+      'UPDATE users SET role = ?, premium_until = ? WHERE email = ?', 
+      ['premium', formattedDate, email]
+    );
+    
     return { success: true };
-  } catch (error) { return { error: "Upgrade failed." }; }
+  } catch (error: any) {
+    console.error("Upgrade error:", error);
+    return { error: "Upgrade failed. Database connection issue." };
+  }
 }
 export async function checkPremiumStatus(email: string) {
   try {
     const [rows]: any = await db.execute(
-      'SELECT role FROM users WHERE email = ?',
+      'SELECT role, premium_until FROM users WHERE email = ?',
       [email]
     );
     
-    // Check if the user exists and if their role is 'premium' or 'admin'
-    const isPremium = rows[0]?.role === 'premium' || rows[0]?.role === 'admin';
-    
-    return { success: true, isPremium };
+    const user = rows[0];
+    if (!user) return { success: false, isPremium: false };
+
+    // 1. Admins are always Premium (God Mode)
+    if (user.role === 'admin') return { success: true, isPremium: true };
+
+    // 2. If they aren't premium at all, return false
+    if (user.role !== 'premium') return { success: true, isPremium: false };
+
+    // 3. Check the Expiration Date
+    const now = new Date();
+    const expiry = user.premium_until ? new Date(user.premium_until) : null;
+
+    // Logic: If they are 'premium' AND the expiry date is still in the future
+    if (expiry && expiry > now) {
+      return { success: true, isPremium: true };
+    }
+
+    // 4. AUTO-EXPIRE: If they were premium but time ran out
+    if (expiry && expiry <= now) {
+      // Demote them back to 'free' in the database automatically
+      await db.execute('UPDATE users SET role = "free" WHERE email = ?', [email]);
+      return { success: true, isPremium: false };
+    }
+
+    return { success: true, isPremium: false };
   } catch (error) {
     console.error("Status Check Error:", error);
-    return { success: false, error: "Failed to check status" };
+    return { success: false, isPremium: false };
   }
 }
 

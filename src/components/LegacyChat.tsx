@@ -25,27 +25,33 @@ export default function LegacyChat({
   const [loading, setLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [history, setHistory] = useState<Message[]>([]);
+  const [dbChatCount, setDbChatCount] = useState(0); // Add this state
   
   // NEW: State for paywall logic
   const [isPremium, setIsPremium] = useState(false);
   const [userEmail, setUserEmail] = useState("");
 
-  useEffect(() => {
-    const checkStatus = async () => {
-      const savedSession = localStorage.getItem('katha_session');
-      if (savedSession) {
-        const user = JSON.parse(savedSession);
-        setUserEmail(user.email);
-        const res = await checkPremiumStatus(user.email);
-        if (res.success) setIsPremium(res.isPremium ?? false);
+useEffect(() => {
+  const checkStatus = async () => {
+    const savedSession = localStorage.getItem('katha_session');
+    if (savedSession) {
+      const user = JSON.parse(savedSession);
+      setUserEmail(user.email);
+      const res = await checkPremiumStatus(user.email);
+      if (res.success) {
+        setIsPremium(res.isPremium ?? false);
+        // @ts-ignore (if you add chat_count to the response)
+        setDbChatCount(res.chatCount || 0); 
       }
-    };
-    checkStatus();
-  }, []);
+    }
+  };
+  checkStatus();
+}, []);
 
   // NEW: Count only 'user' messages
-  const userMessageCount = history.filter(m => m.role === 'user').length;
-  const isLimitReached = !isPremium && userMessageCount >= 2;
+// Combined count of previous chats + current session chats
+const totalChatsUsed = dbChatCount + history.filter(m => m.role === 'user').length;
+const isLimitReached = !isPremium && totalChatsUsed >= 2;
 
   const toggleListening = () => {
     if (isLimitReached) return; // Block voice if limit reached

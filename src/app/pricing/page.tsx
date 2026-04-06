@@ -27,8 +27,11 @@ export default function Pricing() {
       if (savedSession) {
         const user = JSON.parse(savedSession);
         const res = await checkPremiumStatus(user.email);
-        if (res.success) setIsPremium(res.isPremium ?? false);
-      }
+if (res.success && res.isPremium) {
+  setIsPremium(true);
+  // If you add 'expiryDate' to your checkPremiumStatus return:
+  // setExpiryDate(res.expiryDate); 
+}
       setLoading(false);
     };
     checkStatus();
@@ -77,7 +80,7 @@ export default function Pricing() {
       amount: 2900, 
       currency: "INR",
       name: "KATHA",
-      description: "Lifetime Digital Legacy Access",
+      description: "1-Month Premium Legacy Access",
       handler: async function (response: any) {
         setProcessing(true);
         const updateRes = await upgradeToPremium(user.email);
@@ -167,7 +170,7 @@ export default function Pricing() {
              <h3 className={`font-bold text-xl ${isPremium ? 'text-green-700' : 'text-blue-600'}`}>Katha Premium</h3>
           </div>
 
-          <div className="text-4xl font-black mb-6">₹29 <span className="text-sm font-normal text-slate-400">/ one-time</span></div>
+          <div className="text-4xl font-black mb-6">₹29 <span className="text-sm font-normal text-slate-400">/ month</span></div>
           
           <ul className="space-y-4 mb-10 text-sm">
             <li className="flex items-center gap-3 font-bold text-slate-900"><Check size={18} className="text-blue-600"/> AI Biographer (Voice & Story)</li>
