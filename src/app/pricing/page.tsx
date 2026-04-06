@@ -27,11 +27,8 @@ export default function Pricing() {
       if (savedSession) {
         const user = JSON.parse(savedSession);
         const res = await checkPremiumStatus(user.email);
-if (res.success && res.isPremium) {
-  setIsPremium(true);
-  // If you add 'expiryDate' to your checkPremiumStatus return:
-  // setExpiryDate(res.expiryDate); 
-}
+        if (res.success) setIsPremium(res.isPremium ?? false);
+      }
       setLoading(false);
     };
     checkStatus();

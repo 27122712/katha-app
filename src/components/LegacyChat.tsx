@@ -123,7 +123,7 @@ const handleTalk = async () => {
         </h3>
         {!isPremium && (
           <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-full">
-            {userMessageCount}/2 Free Chats
+            {totalChatsUsed}/2 Free Chats
           </span>
         )}
       </div>
