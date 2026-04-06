@@ -73,7 +73,7 @@ export default function Pricing() {
 
     const options = {
       // PRO TIP: In Vercel, use process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
-      key: "rzp_test_XXXXXXXXXXXXXX", 
+      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
       amount: 2900, 
       currency: "INR",
       name: "KATHA",
