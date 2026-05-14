@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { registerUser } from '../actions';
-import { User, Mail, Lock, Sparkles, Quote, Loader2 } from 'lucide-react';
+import { User, Mail, Lock, Sparkles, Quote, Loader2, ShieldCheck, KeyRound } from 'lucide-react';
 
 export default function RegisterPage() {
   const [msg, setMsg] = useState({ type: '', text: '' });
@@ -23,7 +23,6 @@ export default function RegisterPage() {
 
       if (result.success) {
         setMsg({ type: 'success', text: 'Legacy Seeded! Redirecting to login...' });
-        // Delay redirect so user can see the success message
         setTimeout(() => {
           router.push('/login');
         }, 2500);
@@ -93,8 +92,8 @@ export default function RegisterPage() {
                <textarea 
                  name="traits" 
                  required
-                 placeholder="How would your loved ones describe you? (e.g. witty, calm, tech-enthusiast)" 
-                 className="w-full p-4 bg-white border border-blue-100 rounded-2xl outline-none text-sm min-h-[100px] focus:ring-2 focus:ring-blue-500 transition resize-none"
+                 placeholder="How would your loved ones describe you?" 
+                 className="w-full p-4 bg-white border border-blue-100 rounded-2xl outline-none text-sm min-h-[80px] focus:ring-2 focus:ring-blue-500 transition resize-none"
                />
              </div>
 
@@ -106,7 +105,44 @@ export default function RegisterPage() {
                    name="philosophy" 
                    required
                    placeholder="What is one piece of advice you want to leave behind?" 
-                   className="w-full pl-12 pr-4 py-4 bg-white border border-blue-100 rounded-2xl outline-none text-sm min-h-[100px] focus:ring-2 focus:ring-blue-500 transition resize-none"
+                   className="w-full pl-12 pr-4 py-4 bg-white border border-blue-100 rounded-2xl outline-none text-sm min-h-[80px] focus:ring-2 focus:ring-blue-500 transition resize-none"
+                 />
+               </div>
+             </div>
+          </div>
+
+          {/* --- SECURITY RECOVERY SECTION --- */}
+          <div className="p-6 bg-slate-900 rounded-3xl border border-slate-800 space-y-4 text-white">
+             <div className="flex items-center gap-2 mb-2">
+                <ShieldCheck className="text-blue-400" size={20} />
+                <h3 className="text-sm font-bold uppercase tracking-wider">Vault Recovery</h3>
+             </div>
+             
+             <div className="space-y-3">
+               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Security Question</p>
+               <select 
+                 name="securityQuestion" 
+                 required
+                 className="w-full px-4 py-4 bg-slate-800 border border-slate-700 rounded-2xl outline-none text-sm focus:ring-2 focus:ring-blue-500 transition appearance-none"
+               >
+                 <option value="">Choose a challenge...</option>
+                 <option value="What was the name of your first pet?">What was the name of your first pet?</option>
+                 <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+                 <option value="What was the name of your first school?">What was the name of your first school?</option>
+                 <option value="What city were you born in?">What city were you born in?</option>
+               </select>
+             </div>
+
+             <div className="space-y-3">
+               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Secret Answer</p>
+               <div className="relative">
+                 <KeyRound className="absolute left-4 top-4 text-slate-500" size={18} />
+                 <input 
+                   name="securityAnswer" 
+                   type="text" 
+                   required
+                   placeholder="Answer (Case-sensitive)" 
+                   className="w-full pl-12 pr-4 py-4 bg-slate-800 border border-slate-700 rounded-2xl outline-none text-sm focus:ring-2 focus:ring-blue-500 transition"
                  />
                </div>
              </div>
@@ -123,7 +159,7 @@ export default function RegisterPage() {
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full bg-slate-900 text-white py-5 rounded-2xl font-bold hover:bg-slate-800 transition shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3"
+            className="w-full bg-slate-900 text-white py-5 rounded-2xl font-bold hover:bg-slate-800 transition shadow-lg disabled:opacity-50 flex items-center justify-center gap-3"
           >
             {loading ? (
               <>

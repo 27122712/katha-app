@@ -1,13 +1,18 @@
 import mysql from 'mysql2/promise';
 
 export const db = mysql.createPool({
-  // Use 'uri' instead of host/user/password
-  uri: process.env.DATABASE_URL, 
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: 4000, 
+  ssl: {
+    // This allows the connection even if your local machine 
+    // doesn't have the TiDB CA certificate installed.
+    rejectUnauthorized: false,
+    minVersion: 'TLSv1.2'
+  },
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0,
-  ssl: {
-    // Railway needs this to avoid handshake errors
-    rejectUnauthorized: false 
-  }
+  queueLimit: 0
 });

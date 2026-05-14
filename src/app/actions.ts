@@ -21,30 +21,33 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
   auth: {
     user: 'kathasystems@gmail.com',
-    pass: process.env.EMAIL_PASS, 
+    pass: process.env.EMAIL_PASS,
   },
-  // This prevents Vercel from killing the function too early
-  connectionTimeout: 10000, 
+  tls: {
+    // This allows the connection even if the local SSL handshake is weird
+    rejectUnauthorized: false 
+  }
 });
-
 /* --- 1. USER AUTH & REGISTRATION --- */
 
+// actions.ts
 export async function registerUser(formData: FormData) {
   const name = formData.get('name') as string;
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
   const traits = formData.get('traits') as string;
   const philosophy = formData.get('philosophy') as string;
+  
+  // These names must match the 'name' attribute of your HTML inputs
+  const question = formData.get('securityQuestion') as string;
+  const answer = formData.get('securityAnswer') as string;
 
   try {
     await db.execute(
-      'INSERT INTO users (name, email, password, personality_traits, life_philosophy) VALUES (?, ?, ?, ?, ?)',
-      [name, email, password, traits, philosophy]
+      'INSERT INTO users (name, email, password, personality_traits, life_philosophy, security_question, security_answer) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [name, email, password, traits, philosophy, question, answer]
     );
     return { success: true };
   } catch (error: any) { 
@@ -52,6 +55,44 @@ export async function registerUser(formData: FormData) {
     return { error: "Registration failed. Email might already exist." }; 
   }
 }
+export async function getSecurityQuestion(email: string) {
+  try {
+    // This query pulls the unique question you added via the SQL Editor earlier
+    const [rows]: any = await db.execute(
+      'SELECT security_question FROM users WHERE email = ?', 
+      [email]
+    );
+
+    if (rows[0] && rows[0].security_question) {
+      return { success: true, question: rows[0].security_question };
+    }
+    
+    return { error: "This email hasn't established a legacy challenge yet." };
+  } catch (error: any) {
+    return { error: "Vault resonance failed. Check your connection." };
+  }
+}
+
+// actions.ts
+export async function verifySecurityAnswer(email: string, answer: string) {
+  // Update query to select name and email as well
+  const [rows]: any = await db.execute(
+    'SELECT name, email, password FROM users WHERE email = ? AND security_answer = ?', 
+    [email, answer]
+  );
+
+  if (rows[0]) {
+    return { 
+      success: true, 
+      user: { 
+        name: rows[0].name, 
+        email: rows[0].email 
+      } 
+    };
+  }
+  return { error: "The resonance does not match. Access denied." };
+}
+
 export async function getUserDetails(email: string) {
   try {
     // 1. Get user basic info
@@ -351,5 +392,38 @@ export async function saveWisdom(email: string, thought: string) {
   } catch (error) {
     console.error("Save Wisdom Error:", error);
     return { error: "Failed to seed wisdom." };
+  }
+}
+
+/* --- 5. AUTHENTICATION UTILITIES --- */
+
+export async function sendPasswordReset(email: string) {
+  try {
+    // 1. Verify existence
+    const [rows]: any = await db.execute('SELECT email FROM users WHERE email = ?', [email]);
+    if (!rows[0]) {
+      return { error: "User with this email not found." };
+    }
+
+    // 2. Dispatch Email
+    await transporter.sendMail({
+      from: '"Katha Vault" <kathasystems@gmail.com>',
+      to: email,
+      subject: "Access Recovery: Reset Your Legacy Password",
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; color: #334155;">
+          <h2 style="color: #0f172a;">Password Reset</h2>
+          <p>You requested access recovery for your Katha Vault.</p>
+          <p>This is a placeholder for your reset link. In a production app, you would include a unique secure token here.</p>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          <p style="font-size: 12px; color: #94a3b8;">If you did not request this, please ignore this email.</p>
+        </div>
+      `,
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Full SMTP Error:", error);
+    return { error: `SMTP Error: ${error.message || "Failed to send email"}` };
   }
 }

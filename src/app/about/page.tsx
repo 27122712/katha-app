@@ -1,115 +1,112 @@
 'use client';
 
 import React from 'react';
-import { Terminal, Wrench, Heart, Globe, Cpu, Shield, Mail, ArrowRight } from 'lucide-react'; 
+import { Terminal, Wrench, Heart, Globe, Cpu, Shield, Mail, ArrowRight, Sparkles } from 'lucide-react'; 
 
 export default function About() {
   return (
-    <div className="bg-white text-slate-900 w-full min-h-screen selection:bg-blue-100 pb-20">
+    <div className="bg-white text-slate-900 w-full min-h-screen selection:bg-blue-100 pb-16 pt-6 font-sans antialiased">
       
-      {/* HERO SECTION */}
-      <section className="max-w-4xl mx-auto px-6 pt-24 pb-16 text-center animate-in fade-in duration-700">
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black uppercase rounded-full tracking-widest mb-6">
-          Established 2026
+      {/* COMPACT HERO SECTION */}
+      <section className="max-w-4xl mx-auto px-6 pt-12 md:pt-16 pb-10 text-center animate-in fade-in duration-700">
+        <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 text-[9px] font-black uppercase rounded-full tracking-widest mb-6 border border-blue-100">
+          <Sparkles size={10} /> Established 2026
         </div>
-        <h1 className="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight text-slate-900 leading-tight">
-          Preserving <span className="text-blue-600">Human Connection</span>
+        <h1 className="text-3xl md:text-5xl font-black mb-4 tracking-tighter leading-tight text-slate-900">
+          Preserving <span className="text-blue-600 italic">Human Connection.</span>
         </h1>
-        <p className="text-lg text-slate-500 max-w-2xl mx-auto font-medium leading-relaxed">
-          Katha was founded to ensure that no story is ever silenced by technology. 
-          We bridge the gap between digital assets and human legacy, ensuring your wisdom outlives the hardware it's stored on.
+        <p className="text-sm md:text-base text-slate-500 max-w-xl mx-auto font-medium leading-relaxed">
+          Katha was founded to ensure no story is silenced by time. 
+          We bridge the gap between digital assets and human legacy, ensuring wisdom outlives hardware.
         </p>
       </section>
 
-      {/* THE MISSION CARDS */}
-      <section className="max-w-6xl mx-auto px-6 py-12 grid md:grid-cols-3 gap-8">
-        <div className="p-8 rounded-[2.5rem] bg-slate-50 border border-slate-100 hover:shadow-xl hover:shadow-slate-100 transition-all duration-500 group">
-          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-colors">
-            <Terminal size={24} />
+      {/* TIGHT MISSION GRID */}
+      <section className="max-w-5xl mx-auto px-6 py-6 grid md:grid-cols-3 gap-4">
+        {[
+          {
+            icon: <Terminal size={18} />,
+            title: "Built on Code",
+            desc: "Precision architecture ensuring data accessibility across generations and devices."
+          },
+          {
+            icon: <Cpu size={18} />,
+            title: "Engineered Safety",
+            desc: "Roots in motherboard-level repair allow us to protect against physical cloud vulnerability."
+          },
+          {
+            icon: <Globe size={18} />,
+            title: "Born in India",
+            desc: "A homegrown solution protecting digital heritage, from family memories to vital credentials."
+          }
+        ].map((item, i) => (
+          <div key={i} className="p-6 rounded-2xl bg-slate-50 border border-slate-100 hover:border-blue-200 transition-all duration-300 group">
+            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center mb-4 shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-colors border border-slate-50">
+              {item.icon}
+            </div>
+            <h3 className="font-bold text-xs uppercase tracking-wider mb-2">{item.title}</h3>
+            <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+              {item.desc}
+            </p>
           </div>
-          <h3 className="font-bold text-lg mb-3">Built on Code</h3>
-          <p className="text-sm text-slate-500 leading-relaxed">
-            Crafted with precision using modern web architecture to ensure 
-            your data remains accessible across generations and devices.
-          </p>
-        </div>
-
-        <div className="p-8 rounded-[2.5rem] bg-slate-50 border border-slate-100 hover:shadow-xl hover:shadow-slate-100 transition-all duration-500 group">
-          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-colors">
-            <Cpu size={24} />
-          </div>
-          <h3 className="font-bold text-lg mb-3">Engineered for Safety</h3>
-          <p className="text-sm text-slate-500 leading-relaxed">
-            With roots in motherboard-level electronics repair, we understand 
-            the physical vulnerability of the "cloud" and build to protect it.
-          </p>
-        </div>
-
-        <div className="p-8 rounded-[2.5rem] bg-slate-50 border border-slate-100 hover:shadow-xl hover:shadow-slate-100 transition-all duration-500 group">
-          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-colors">
-            <Globe size={24} />
-          </div>
-          <h3 className="font-bold text-lg mb-3">Born in India</h3>
-          <p className="text-sm text-slate-500 leading-relaxed">
-            A homegrown solution designed to protect the digital heritage of 
-            millions, from family memories to vital digital credentials.
-          </p>
-        </div>
+        ))}
       </section>
 
-      {/* FOUNDER'S NOTE */}
-      <section className="max-w-5xl mx-auto px-6 py-20">
-        <div className="bg-slate-900 text-white rounded-[3.5rem] p-10 md:p-20 relative overflow-hidden shadow-2xl">
-          <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none">
-            <Heart size={200} />
+      {/* FOUNDER'S NOTE - Refined as a sleek dark module */}
+      <section className="max-w-5xl mx-auto px-6 py-12">
+        <div className="bg-slate-900 text-white rounded-[2.5rem] p-8 md:p-14 relative overflow-hidden shadow-2xl border border-slate-800">
+          <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
+            <Shield size={180} />
           </div>
           <div className="relative z-10 max-w-2xl">
-            <h2 className="text-3xl font-bold mb-10 flex items-center gap-3">
-              <Wrench className="text-blue-500" /> A Note from the Founder
-            </h2>
-            <div className="space-y-8 text-slate-300 text-xl leading-relaxed italic">
+            <div className="flex items-center gap-2 mb-6">
+                <Wrench className="text-blue-500" size={16} />
+                <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Founder's Vision</span>
+            </div>
+            <div className="space-y-6 text-slate-300 text-base md:text-lg leading-relaxed italic font-medium">
               <p>
-                "I've spent years fixing broken motherboards and writing code. 
-                I saw first-hand how easily a lifetime of memories could vanish because of 
+                "I saw first-hand how easily a lifetime of memories could vanish because of 
                 a single locked device or a forgotten password."
               </p>
               <p>
-                Katha is my answer to that problem. We are building a bridge between 
-                technical security and emotional legacy. We don't just store files; 
-                we ensure your presence is felt when it matters most.
+                Katha is the answer. We don't just store files; we build the technical 
+                infrastructure for emotional legacy.
               </p>
-              <div className="pt-6 not-italic">
-                <p className="font-black text-white uppercase tracking-widest text-sm">— Team Katha</p>
-                <p className="text-blue-400 text-xs font-bold mt-1">Lead Engineers & Visionaries</p>
+              <div className="pt-4 not-italic flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-black text-xs">K</div>
+                <div>
+                    <p className="font-black text-white uppercase tracking-widest text-[10px]">Team Katha</p>
+                    <p className="text-blue-400 text-[9px] font-bold uppercase tracking-tighter">Lead Engineers & Visionaries</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* CONTACT & VALUES */}
-      <section className="max-w-4xl mx-auto px-6 py-12">
-        <div className="bg-blue-50 rounded-[2.5rem] p-12 border border-blue-100 text-center">
-            <h3 className="text-2xl font-bold mb-4">Have questions?</h3>
-            <p className="text-slate-500 mb-8">We're here to help you secure your digital heritage.</p>
+      {/* CONTACT & VALUES - Compact Footer */}
+      <section className="max-w-4xl mx-auto px-6 py-8">
+        <div className="bg-blue-50/50 rounded-[2rem] p-10 border border-blue-100/50 text-center">
+            <h3 className="text-xl font-black uppercase tracking-tight mb-2">System Support</h3>
+            <p className="text-xs text-slate-500 mb-6 font-medium">Available 24/7 for digital heritage inquiries.</p>
             <a 
               href="mailto:kathasystems@gmail.com" 
-              className="inline-flex items-center gap-3 bg-white border border-blue-100 px-8 py-4 rounded-2xl font-bold text-blue-600 hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+              className="inline-flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg active:scale-95 group"
             >
-              <Mail size={20} /> kathasystems@gmail.com
+              <Mail size={14} /> kathasystems@gmail.com
             </a>
         </div>
 
-        <div className="flex justify-center gap-8 md:gap-16 mt-20 opacity-40">
-          <div className="flex items-center gap-2 font-black text-[10px] uppercase tracking-[0.2em]">
-            <Shield size={14} /> Privacy First
-          </div>
-          <div className="flex items-center gap-2 font-black text-[10px] uppercase tracking-[0.2em]">
-            <Wrench size={14} /> Excellence
-          </div>
-          <div className="flex items-center gap-2 font-black text-[10px] uppercase tracking-[0.2em]">
-            <Heart size={14} /> Human Centered
-          </div>
+        <div className="flex justify-center gap-6 md:gap-12 mt-12 opacity-30">
+          {[
+            { icon: <Shield size={12} />, label: "Privacy First" },
+            { icon: <Wrench size={12} />, label: "Excellence" },
+            { icon: <Heart size={12} />, label: "Human Centered" }
+          ].map((v, i) => (
+            <div key={i} className="flex items-center gap-1.5 font-black text-[8px] uppercase tracking-[0.2em]">
+              {v.icon} {v.label}
+            </div>
+          ))}
         </div>
       </section>
     </div>

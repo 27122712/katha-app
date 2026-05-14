@@ -1,12 +1,9 @@
-'use client';
+"use client";
 
-// 1. CRITICAL: Tell Vercel to skip static pre-rendering for this page
 export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect } from 'react';
-import { Check, ShieldCheck, Crown, Loader2, Lock, X } from 'lucide-react';
-import Link from 'next/link';
-// 2. Import Script from Next.js to load Razorpay SDK
+import { Check, ShieldCheck, Crown, Loader2, Lock, X, ArrowRight, Shield, Zap, MessageSquare, HardDrive, AlertCircle } from 'lucide-react';
 import Script from 'next/script';
 import { checkPremiumStatus, upgradeToPremium, loginUser } from '../actions'; 
 
@@ -14,12 +11,13 @@ export default function Pricing() {
   const [isPremium, setIsPremium] = useState(false);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  
-  // VERIFICATION STATES
   const [showVerify, setShowVerify] = useState(false);
   const [verifyEmail, setVerifyEmail] = useState('');
   const [verifyPass, setVerifyPass] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
+  
+  // TOAST STATE
+  const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
 
   useEffect(() => {
     const checkStatus = async () => {
@@ -34,65 +32,58 @@ export default function Pricing() {
     checkStatus();
   }, []);
 
-  // STEP 1: VALIDATE USER CREDENTIALS
+  // CUSTOM TOAST TRIGGER
+  const triggerToast = (msg: string) => {
+    setToast({ message: msg, visible: true });
+    setTimeout(() => setToast({ message: '', visible: false }), 4000);
+  };
+
   const handleStartVerification = () => {
     const savedSession = localStorage.getItem('katha_session');
     if (!savedSession) {
-      alert("Please login first to upgrade your legacy.");
-      window.location.href = '/login';
+      triggerToast("Please login first to authorize vault upgrades.");
       return;
     }
     setShowVerify(true);
   };
 
-  // STEP 2: CHECK DB AND TRIGGER RAZORPAY
   const handleVerifyAndPay = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsVerifying(true);
-
     const formData = new FormData();
     formData.append('email', verifyEmail);
     formData.append('password', verifyPass);
 
     const authRes = await loginUser(formData);
-
     if (authRes.success) {
       setShowVerify(false);
       triggerRazorpay(authRes.user);
     } else {
-      alert("Invalid credentials. Please enter your correct Gmail and Password.");
+      triggerToast("Verification failed. Incorrect credentials.");
     }
     setIsVerifying(false);
   };
 
   const triggerRazorpay = (user: any) => {
-    if (!(window as any).Razorpay) {
-      alert("Razorpay SDK is still loading. Please wait a moment.");
-      return;
-    }
-
+    if (!(window as any).Razorpay) return;
     const options = {
-      // PRO TIP: In Vercel, use process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
       key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
       amount: 2900, 
       currency: "INR",
       name: "KATHA",
-      description: "1-Month Premium Legacy Access",
+      description: "Premium Legacy Access",
       handler: async function (response: any) {
         setProcessing(true);
         const updateRes = await upgradeToPremium(user.email);
         if (updateRes.success) {
           setIsPremium(true);
-          alert("Payment Successful! Your Digital Soul is now Premium.");
-        } else {
-          alert("Payment received, but failed to update status.");
+          triggerToast("Vault Upgrade Successful.");
         }
         setProcessing(false);
       },
       prefill: { name: user.name, email: user.email },
       theme: { color: "#2563eb" },
     };
-
     const rzp = new (window as any).Razorpay(options);
     rzp.open();
   };
@@ -100,99 +91,129 @@ export default function Pricing() {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white">
-        <Loader2 className="animate-spin text-blue-600 mb-4" size={32} />
-        <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-slate-400">Syncing Plans...</p>
+        <Loader2 className="animate-spin text-blue-600 mb-2" size={20} />
+        <p className="text-[8px] font-black uppercase tracking-[0.4em] text-slate-300">Syncing Vault</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white text-slate-900 w-full min-h-screen selection:bg-blue-100 pb-16 pt-24 relative">
-      
-      {/* 3. Load the Razorpay SDK script securely */}
-      <Script
-        id="razorpay-checkout-js"
-        src="https://checkout.razorpay.com/v1/checkout.js"
-      />
+    <div className="bg-white text-slate-900 w-full min-h-screen selection:bg-blue-100 pb-8 pt-6 md:pt-10 font-sans antialiased relative">
+      <Script id="razorpay-checkout-js" src="https://checkout.razorpay.com/v1/checkout.js" />
+
+      {/* CUSTOM ANIMATED TOASTER */}
+      <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] transition-all duration-500 ease-out ${toast.visible ? 'translate-y-0 opacity-100' : '-translate-y-12 opacity-0 pointer-events-none'}`}>
+        <div className="bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl border border-white/10 flex items-center gap-3 min-w-[280px]">
+          <div className="bg-blue-600 p-1.5 rounded-lg">
+            <AlertCircle size={14} className="text-white"/>
+          </div>
+          <p className="text-[10px] font-bold tracking-wide">{toast.message}</p>
+          <button onClick={() => setToast({ ...toast, visible: false })} className="ml-auto text-slate-500 hover:text-white">
+            <X size={14}/>
+          </button>
+        </div>
+      </div>
 
       {/* VERIFICATION MODAL */}
       {showVerify && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center px-6">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowVerify(false)}></div>
-          <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 relative z-10 shadow-2xl animate-in zoom-in-95 duration-200">
-            <button onClick={() => setShowVerify(false)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600"><X size={20}/></button>
-            
-            <div className="text-center mb-8">
-              <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Lock size={20}/>
-              </div>
-              <h3 className="text-xl font-bold">Security Check</h3>
-              <p className="text-xs text-slate-500 mt-1">Re-verify your credentials to proceed with the payment.</p>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setShowVerify(false)}></div>
+          <div className="bg-white w-full max-w-[300px] rounded-[2rem] p-6 relative z-10 shadow-2xl border border-slate-100">
+            <button onClick={() => setShowVerify(false)} className="absolute top-4 right-4 text-slate-300 hover:text-slate-900"><X size={16}/></button>
+            <div className="text-center mb-4">
+              <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mx-auto mb-2"><Lock size={16}/></div>
+              <h3 className="text-[11px] font-black tracking-widest uppercase">Security Auth</h3>
             </div>
-
-            <form onSubmit={handleVerifyAndPay} className="space-y-4">
-              <input 
-                type="email" required placeholder="Gmail Address" 
-                className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={verifyEmail} onChange={(e) => setVerifyEmail(e.target.value)}
-              />
-              <input 
-                type="password" required placeholder="Password" 
-                className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={verifyPass} onChange={(e) => setVerifyPass(e.target.value)}
-              />
-              <button 
-                type="submit" disabled={isVerifying}
-                className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-blue-700 transition disabled:opacity-50"
-              >
-                {isVerifying ? 'Verifying...' : 'Verify & Pay ₹29'}
-              </button>
+            <form onSubmit={handleVerifyAndPay} className="space-y-2.5">
+              <input type="email" required placeholder="Gmail" className="w-full bg-slate-50 border border-slate-100 p-3 rounded-xl text-[10px] focus:ring-1 focus:ring-blue-600/20" value={verifyEmail} onChange={(e) => setVerifyEmail(e.target.value)}/>
+              <input type="password" required placeholder="Password" className="w-full bg-slate-50 border border-slate-100 p-3 rounded-xl text-[10px] focus:ring-1 focus:ring-blue-600/20" value={verifyPass} onChange={(e) => setVerifyPass(e.target.value)}/>
+              <button type="submit" disabled={isVerifying} className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-[9px] uppercase tracking-widest shadow-md active:scale-95 transition-all">{isVerifying ? 'Verifying...' : 'Verify & Pay ₹29'}</button>
             </form>
           </div>
         </div>
       )}
 
-      {/* PRICING UI */}
-      <div className="text-center mb-16">
-        <h1 className="text-4xl md:text-5xl font-extrabold mb-4 tracking-tight">Your <span className="text-blue-600">Digital Legacy</span></h1>
-        <p className="text-slate-500 font-bold tracking-widest uppercase text-[10px]">One small step for you, a giant leap for your story</p>
-      </div>
+      {/* COMPACT HEADER */}
+      <header className="max-w-4xl mx-auto px-6 text-center mb-6">
+        <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 text-[8px] font-black uppercase rounded-full tracking-widest mb-2 border border-blue-100">
+          <Shield size={10} /> Metallic-Grade Security Protocol
+        </div>
+        <h1 className="text-2xl md:text-4xl font-black mb-1 tracking-tighter leading-tight">
+          Choose Your <span className="text-blue-600 italic">Timeline.</span>
+        </h1>
+        <p className="text-slate-400 font-bold tracking-[0.1em] uppercase text-[7px] md:text-[8px]">Select the depth of your digital preservation</p>
+      </header>
 
-      <div className="max-w-md mx-auto px-6">
-        <div className={`border-2 p-8 rounded-[3rem] relative overflow-hidden transition-all duration-500 ${isPremium ? 'border-green-500 bg-green-50/30' : 'border-blue-600 shadow-2xl shadow-blue-100 bg-blue-50/20 ring-4 ring-blue-600/5'}`}>
-          <div className={`absolute top-6 right-[-35px] text-white text-[8px] font-black px-10 py-1 rotate-45 shadow-sm ${isPremium ? 'bg-green-500' : 'bg-blue-600'}`}>{isPremium ? 'ACTIVE' : 'BEST VALUE'}</div>
-          
-          <div className="flex items-center gap-3 mb-4">
-             {isPremium ? <Crown className="text-green-600" size={24}/> : <ShieldCheck className="text-blue-600" size={24}/>}
-             <h3 className={`font-bold text-xl ${isPremium ? 'text-green-700' : 'text-blue-600'}`}>Katha Premium</h3>
-          </div>
-
-          <div className="text-4xl font-black mb-6">₹29 <span className="text-sm font-normal text-slate-400">/ month</span></div>
-          
-          <ul className="space-y-4 mb-10 text-sm">
-            <li className="flex items-center gap-3 font-bold text-slate-900"><Check size={18} className="text-blue-600"/> AI Biographer (Voice & Story)</li>
-            <li className="flex items-center gap-3 font-bold text-slate-900"><Check size={18} className="text-blue-600"/> Time Capsule (Future Messages)</li>
-            <li className="flex items-center gap-3 text-slate-700"><Check size={18} className="text-blue-600"/> High-Resolution Photo Backup</li>
-            <li className="flex items-center gap-3 text-slate-700"><Check size={18} className="text-blue-600"/> 24/7 Priority Legacy Support</li>
+      {/* TWO-COLUMN LAYOUT */}
+      <div className="max-w-4xl mx-auto px-6 grid md:grid-cols-2 gap-4 items-start">
+        {/* FREE VERSION */}
+        <div className="bg-slate-50/50 rounded-[1.5rem] p-6 border border-slate-100 h-full flex flex-col">
+          <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-3">Baseline Access</div>
+          <h3 className="text-lg font-black mb-3 uppercase">Katha Free</h3>
+          <ul className="space-y-2 mb-6 flex-grow">
+            <li className="flex items-center gap-2 text-[10px] font-bold text-slate-700">
+              <MessageSquare size={10} className="text-blue-500"/> 2 AI Chats Free
+            </li>
+            <li className="flex items-center gap-2 text-[10px] font-bold text-slate-700">
+              <HardDrive size={10} className="text-blue-500"/> Secure File Storage
+            </li>
+            {['Manual Timeline Control', 'Standard Encryption'].map((f, i) => (
+              <li key={i} className="flex items-center gap-2 text-[10px] font-semibold text-slate-400">
+                <Check size={10} className="text-slate-200"/> {f}
+              </li>
+            ))}
           </ul>
-          
+          <div className="py-2 text-center bg-white/50 border border-slate-100 rounded-xl text-[8px] font-black uppercase tracking-widest text-slate-400">
+            Currently Enrolled
+          </div>
+        </div>
+
+        {/* PREMIUM VERSION */}
+        <div className={`rounded-[1.5rem] p-6 relative overflow-hidden transition-all duration-500 border-2 ${isPremium ? 'border-green-500 bg-green-50/10' : 'border-blue-600 bg-white shadow-xl shadow-blue-50'}`}>
+          <div className={`absolute top-0 right-0 px-3 py-1 rounded-bl-xl text-[7px] font-black tracking-widest text-white ${isPremium ? 'bg-green-500' : 'bg-blue-600'}`}>
+            {isPremium ? 'ACTIVE' : 'BEST VALUE'}
+          </div>
+          <div className="flex items-center gap-2 mb-3">
+             <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${isPremium ? 'bg-green-100 text-green-600' : 'bg-blue-50 text-blue-600'}`}>
+                {isPremium ? <Crown size={14}/> : <Zap size={14}/>}
+             </div>
+             <h3 className="font-black text-xs uppercase tracking-wider">Premium Soul</h3>
+          </div>
+          <div className="flex items-baseline gap-1 mb-4 border-b border-slate-50 pb-3">
+            <span className="text-3xl font-black tracking-tighter">₹29</span>
+            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">/ Month</span>
+          </div>
+          <ul className="space-y-2 mb-6">
+            <li className="flex items-center gap-2 text-[10px] font-bold text-slate-900">
+              <Check size={10} className="text-blue-600 stroke-[3]"/> Unlimited AI Chats (Self & Files)
+            </li>
+            <li className="flex items-center gap-2 text-[10px] font-bold text-slate-900">
+              <Check size={10} className="text-blue-600 stroke-[3]"/> Unlimited File Uploads
+            </li>
+            {["Scheduled Legacy Delivery", "Priority Nominee Handover"].map((feature, i) => (
+              <li key={i} className="flex items-center gap-2 text-[10px] font-bold text-slate-700">
+                <Check size={10} className="text-blue-600 stroke-[3]"/> {feature}
+              </li>
+            ))}
+          </ul>
           {isPremium ? (
-            <div className="w-full py-4 rounded-2xl bg-green-500 text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-green-100 cursor-default">
-              <ShieldCheck size={16}/> You already have Premium
+            <div className="w-full py-3 rounded-xl bg-green-50 text-green-600 font-black text-[8px] uppercase tracking-widest flex items-center justify-center gap-2 border border-green-100">
+              <ShieldCheck size={12}/> Active Legacy
             </div>
           ) : (
-            <button 
-              onClick={handleStartVerification}
-              disabled={processing}
-              className="w-full py-4 rounded-2xl bg-blue-600 text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-200 hover:bg-blue-700 transition active:scale-95 disabled:opacity-50"
-            >
-              {processing ? 'Upgrading...' : 'Unlock Premium'}
+            <button onClick={handleStartVerification} disabled={processing} className="w-full py-3 rounded-xl bg-slate-900 text-white font-black text-[8px] uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center justify-center gap-2 group">
+              {processing ? <Loader2 size={12} className="animate-spin"/> : 'Initialize Upgrade'}
+              {!processing && <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform"/>}
             </button>
           )}
         </div>
       </div>
 
-      <p className="text-center mt-12 text-slate-400 text-[10px] font-medium tracking-wide">Secure Payments via Razorpay • 256-bit Encryption</p>
+      <footer className="max-w-xl mx-auto px-6 mt-8 text-center">
+        <p className="text-[7px] font-bold text-slate-300 uppercase tracking-[0.2em] flex items-center justify-center gap-2">
+          <Shield size={10}/> Zero-Knowledge Architecture • Secured via Razorpay
+        </p>
+      </footer>
     </div>
   );
 }
