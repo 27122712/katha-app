@@ -116,7 +116,7 @@ const handleTalk = async () => {
   };
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full min-w-0 space-y-6 overflow-hidden">
       <div className="flex items-center justify-between px-2">
         <h3 className="text-sm font-black uppercase tracking-widest text-blue-600 flex items-center gap-2">
           <Sparkles size={16} /> Consult the Wisdom of {targetUser.name}
@@ -128,7 +128,7 @@ const handleTalk = async () => {
         )}
       </div>
 
-      <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar p-4 bg-slate-50 rounded-[2rem] border border-slate-100">
+      <div className="min-w-0 space-y-4 max-h-[400px] overflow-x-hidden overflow-y-auto pr-2 custom-scrollbar p-4 bg-slate-50 rounded-[2rem] border border-slate-100">
         {history.length === 0 && (
           <div className="text-center py-10 text-slate-400 italic text-sm">
             The vault is open. What would you like to ask?
@@ -138,9 +138,9 @@ const handleTalk = async () => {
         {history.map((msg, index) => (
           <div 
             key={index}
-            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
+            className={`flex min-w-0 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
           >
-            <div className={`max-w-[85%] p-5 rounded-[2rem] shadow-sm ${
+            <div className={`min-w-0 max-w-[85%] overflow-hidden p-5 rounded-[2rem] shadow-sm ${
               msg.role === 'user' 
                 ? 'bg-blue-600 text-white rounded-tr-none' 
                 : 'bg-white border border-slate-200 text-slate-700 italic rounded-tl-none'
@@ -151,7 +151,7 @@ const handleTalk = async () => {
                    <span className="text-[9px] font-black uppercase tracking-widest text-blue-500">Preserved Message</span>
                 </div>
               )}
-              <p className="text-sm leading-relaxed">{msg.content}</p>
+              <p className="break-words whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</p>
             </div>
           </div>
         ))}
@@ -178,8 +178,8 @@ const handleTalk = async () => {
           </div>
         ) : (
           // Standard Input Area
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1 group">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="relative min-w-0 flex-1 group">
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -202,7 +202,9 @@ const handleTalk = async () => {
             <button
               onClick={handleTalk}
               disabled={loading || !input}
-              className="p-5 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 shadow-lg shadow-blue-200 disabled:opacity-20 transition active:scale-95"
+              aria-label="Send message"
+              title="Send message"
+              className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-[#255c45] text-white shadow-lg transition hover:bg-[#17211c] disabled:opacity-30 active:scale-95"
             >
               {loading ? (
                 <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
