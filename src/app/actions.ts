@@ -23,12 +23,15 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const MEMORY_MODEL = "qwen/qwen3.6-27b";
 
 function cleanModelText(value: string) {
-  return value.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+  const withoutClosedThinking = value.replace(/<think>[\s\S]*?<\/think>/gi, "");
+  const withoutDanglingThinking = withoutClosedThinking.replace(/^<think>[\s\S]*?(?=##\s*(Overview|People|Setting|Events)|Overview\s*:)/i, "");
+  return withoutDanglingThinking.replace(/<\/?think>/gi, "").trim();
 }
 
 async function buildMemoryRecord(fileName: string, fileType: string, source: string) {
   const completion = await groq.chat.completions.create({
     model: MEMORY_MODEL,
+    reasoning_effort: "none",
     temperature: 0.2,
     max_completion_tokens: 1800,
     messages: [{
@@ -203,6 +206,7 @@ export async function uploadToVault(formData: FormData, userEmail: string) {
             ],
           }],
           model: MEMORY_MODEL,
+          reasoning_effort: "none",
           temperature: 0.1,
           max_completion_tokens: 1800,
         });
@@ -326,7 +330,8 @@ export async function talkToLegacy(
       .map((item: any, index: number) => {
         const file = item.file;
         const latestLabel = vaultRows[0]?.id === file.id ? " [LATEST UPLOAD]" : "";
-        return `MEMORY ${index + 1}${latestLabel}\nFilename: ${file.file_name}\nType: ${file.file_type}\nUploaded: ${file.uploaded_at}\nEvidence:\n${String(file.ai_summary || "No analysis available").slice(0, 5000)}`;
+        const evidence = cleanModelText(String(file.ai_summary || "No analysis available"));
+        return `MEMORY ${index + 1}${latestLabel}\nFilename: ${file.file_name}\nType: ${file.file_type}\nUploaded: ${file.uploaded_at}\nEvidence:\n${evidence.slice(0, 5000)}`;
       })
       .join("\n\n---\n\n");
 
@@ -365,6 +370,7 @@ ANSWERING RULES
     const chatCompletion = await groq.chat.completions.create({
       messages: messages as any,
       model: MEMORY_MODEL,
+      reasoning_effort: "none",
       temperature: 0.2,
       max_completion_tokens: 1200,
     });

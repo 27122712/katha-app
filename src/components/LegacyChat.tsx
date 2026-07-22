@@ -178,8 +178,8 @@ const handleTalk = async () => {
           </div>
         ) : (
           // Standard Input Area
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1 group">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="relative min-w-0 flex-1 group">
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -202,7 +202,8 @@ const handleTalk = async () => {
             <button
               onClick={handleTalk}
               disabled={loading || !input}
-              className="p-5 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 shadow-lg shadow-blue-200 disabled:opacity-20 transition active:scale-95"
+              aria-label="Send message"
+              className="shrink-0 p-5 bg-[#255c45] text-white rounded-2xl hover:bg-[#17211c] shadow-lg disabled:opacity-20 transition active:scale-95"
             >
               {loading ? (
                 <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
