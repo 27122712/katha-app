@@ -1,273 +1,41 @@
 "use client";
-export const dynamic = "force-dynamic";
-
-import React, { useState, useEffect, Suspense } from "react";
+export const dynamic="force-dynamic";
+import { Suspense,useEffect,useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import {
-  Play,
-  ArrowRight,
-  Lock,
-  Sparkles,
-  Database,
-  Upload,
-  Shield,
-  Clock,
-  MessageSquare,
-  ShieldCheck,
-  BrainCircuit,
-  LogOut,
-  FileText,
-  Eye,
-  Download,
-  Activity,
-  History
-} from "lucide-react";
-import { uploadToVault, getUserVault } from "./actions";
+import { ArrowRight,BookOpen,Clock3,Download,Eye,FileText,Heart,History,Lock,LogOut,MessageCircle,Play,ShieldCheck,Sparkles,Upload } from "lucide-react";
+import { getUserVault,uploadToVault } from "./actions";
 import LegacyChat from "@/components/LegacyChat";
 import MindSeeder from "@/components/VoiceEnrollment";
 
-function HomeContent() {
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
-  const [files, setFiles] = useState<any[]>([]);
-  const [uploadStatus, setUploadStatus] = useState("");
-  const [isUploading, setIsUploading] = useState(false);
-  const searchParams = useSearchParams();
-  const [isMuted, setIsMuted] = useState(true);
+type User={name:string;email:string};
+type VaultFile={id:number;file_name:string;file_url:string;ai_summary?:string};
 
-  const loadVault = async (email: string) => {
-    const res = await getUserVault(email);
-    if (res.success) setFiles(res.files);
-  };
+function HomeContent(){
+ const [user,setUser]=useState<User|null>(null); const [files,setFiles]=useState<VaultFile[]>([]); const [status,setStatus]=useState(""); const [uploading,setUploading]=useState(false); const [muted,setMuted]=useState(true); const params=useSearchParams();
+ const loadVault=async(email:string)=>{const res=await getUserVault(email);if(res.success)setFiles((res.files||[]) as VaultFile[]);};
+ useEffect(()=>{const email=params.get("email"),name=params.get("name");if(email&&name){const next={email:decodeURIComponent(email),name:decodeURIComponent(name)};setUser(next);localStorage.setItem("katha_session",JSON.stringify(next));loadVault(next.email);window.history.replaceState({},"",window.location.pathname);return;}try{const saved=localStorage.getItem("katha_session");if(saved){const parsed=JSON.parse(saved);setUser(parsed);loadVault(parsed.email);}}catch{localStorage.removeItem("katha_session");}},[params]);
+ const logout=()=>{localStorage.removeItem("katha_session");localStorage.removeItem("katha_user");window.location.href="/";};
+ async function upload(data:FormData){if(!user)return;setUploading(true);setStatus("Securing your memory…");try{const res=await uploadToVault(data,user.email);if(res.success){setStatus("Memory safely added");loadVault(user.email);}else setStatus(res.error||"Upload failed");}catch{setStatus("Could not connect. Try again.");}finally{setUploading(false);}}
 
-  const handleLogout = () => {
-    localStorage.removeItem("katha_session");
-    setUser(null);
-    window.location.href = "/";
-  };
-
-  useEffect(() => {
-    const emailFromUrl = searchParams.get("email");
-    const nameFromUrl = searchParams.get("name");
-
-    if (emailFromUrl && nameFromUrl) {
-      const newUser = { name: decodeURIComponent(nameFromUrl), email: decodeURIComponent(emailFromUrl) };
-      setUser(newUser);
-      localStorage.setItem("katha_session", JSON.stringify(newUser));
-      loadVault(newUser.email);
-      window.history.pushState({}, "", window.location.pathname);
-    } else {
-      const savedSession = localStorage.getItem("katha_session");
-      if (savedSession) {
-        const parsed = JSON.parse(savedSession);
-        setUser(parsed);
-        loadVault(parsed.email);
-      }
-    }
-  }, [searchParams]);
-
-  async function handleUpload(formData: FormData) {
-    if (!user) return alert("Session expired.");
-    setIsUploading(true);
-    setUploadStatus("Encrypting...");
-    try {
-      const result = await uploadToVault(formData, user.email);
-      if (result.success) {
-        setUploadStatus(`Success: ${result.fileName}`);
-        loadVault(user.email);
-      } else {
-        setUploadStatus("");
-        alert(result.error || "Upload failed");
-      }
-    } catch (err) {
-      alert("Connection error.");
-    } finally {
-      setIsUploading(false);
-    }
-  }
-
-  return (
-    <main className="bg-[#F8FAFC] text-slate-900 w-full min-h-screen selection:bg-blue-100 font-sans">
-      {user ? (
-        /* --- DASHBOARD VIEW --- */
-        <section className="max-w-7xl mx-auto px-6 pt-24 pb-12 animate-in fade-in slide-in-from-bottom-2 duration-1000">
-  
-  {/* Header Section: Integrated with consistent padding */}
-  <div className="flex flex-col md:flex-row md:justify-between md:items-end mb-12 gap-6 border-b border-slate-100 pb-8">
-    <div>
-      <div className="flex items-center gap-2 mb-2">
-        <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
-        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Vault Session Active</span>
-      </div>
-      <h1 className="text-4xl font-black tracking-tight text-slate-900">
-        Welcome back, <span className="text-blue-600">{user.name.split(' ')[0]}</span>
-      </h1>
-      <p className="text-slate-500 text-sm font-medium mt-1">Your digital legacy is synchronized and secure.</p>
-    </div>
-    
-    <div className="flex items-center gap-6 bg-white p-2 px-4 rounded-2xl border border-slate-100 shadow-sm">
-      {user.email === "kathasystems@gmail.com" && (
-        <Link href="/admin" className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-blue-600 hover:text-blue-700 transition">
-          <ShieldCheck size={14} /> Admin Panel
-        </Link>
-      )}
-      <div className="w-px h-4 bg-slate-200" />
-      <button onClick={handleLogout} className="flex items-center gap-2 text-slate-400 hover:text-red-500 font-bold text-xs uppercase tracking-widest transition">
-        <LogOut size={14} /> Exit Vault
-      </button>
-    </div>
+ if(user)return <main className="min-h-screen bg-[#f4f0e7] px-5 pb-20 pt-28 md:px-8">
+  <div className="mx-auto max-w-7xl">
+   <header className="mb-10 flex flex-col justify-between gap-6 border-b border-[#17211c]/15 pb-8 md:flex-row md:items-end"><div><p className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[.18em] text-[#255c45]"><span className="h-2 w-2 rounded-full bg-[#e86f51]"/>Private archive</p><h1 className="font-display text-4xl leading-tight md:text-6xl">Good to see you, <em>{user.name.split(' ')[0]}.</em></h1><p className="mt-2 text-[#17211c]/60">Keep the moments that made you, you.</p></div><div className="flex gap-3">{user.email==="kathasystems@gmail.com"&&<Link href="/admin" className="rounded-full border border-[#17211c]/15 bg-white/50 px-5 py-3 text-xs font-bold">Admin</Link>}<button onClick={logout} className="flex items-center gap-2 rounded-full border border-[#17211c]/15 px-5 py-3 text-xs font-bold"><LogOut size={15}/>Leave vault</button></div></header>
+   <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
+    <aside className="space-y-5"><div className="overflow-hidden rounded-[2rem] bg-[#17211c] p-6 text-white"><p className="mb-6 text-xs font-bold uppercase tracking-[.18em] text-[#a8c5b4]">Add to your story</p><MindSeeder email={user.email}/><div className="my-6 h-px bg-white/10"/><form action={upload}><label htmlFor="memory" className="block cursor-pointer rounded-2xl border border-dashed border-white/25 p-5 text-center transition hover:border-[#e86f51]"><input id="memory" name="file" type="file" className="hidden" onChange={e=>setStatus(e.target.files?.[0]?.name||"")}/><Upload className="mx-auto mb-3 text-[#e86f51]" size={22}/><span className="block truncate text-sm font-bold">{status||"Choose a memory"}</span><span className="mt-1 block text-[10px] text-white/45">PHOTO · VIDEO · DOCUMENT</span></label><button disabled={uploading} className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-[#e86f51] py-3.5 text-sm font-bold transition hover:bg-[#f08063] disabled:opacity-50"><Lock size={15}/>{uploading?"Preserving…":"Add to archive"}</button></form></div>
+    <div className="rounded-[2rem] border border-[#17211c]/10 bg-[#dfe7da] p-6"><Clock3 className="mb-4 text-[#255c45]"/><h3 className="font-display text-2xl">A question for today</h3><p className="mt-2 text-sm leading-6 text-[#17211c]/65">What ordinary family ritual would you never want forgotten?</p></div></aside>
+    <section className="space-y-6"><div className="rounded-[2rem] border border-[#17211c]/10 bg-[#fbf8f1] p-5 md:p-8"><div className="mb-6 flex items-center justify-between"><div className="flex items-center gap-3"><History size={19} className="text-[#e86f51]"/><h2 className="font-display text-2xl">Your memory shelf</h2></div><span className="rounded-full bg-[#f4f0e7] px-3 py-1 text-xs">{files.length} keepsakes</span></div>{files.length?<div className="grid max-h-[390px] gap-2 overflow-y-auto pr-2 custom-scrollbar">{files.map(file=><article key={file.id} className="group flex items-center justify-between gap-3 rounded-2xl border border-transparent bg-white p-4 hover:border-[#255c45]/20"><div className="flex min-w-0 items-center gap-4"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#f4f0e7] text-[#255c45]"><FileText size={19}/></span><div className="min-w-0"><h3 className="truncate text-sm font-bold">{file.file_name}</h3><p className="truncate text-xs text-[#17211c]/45">{file.ai_summary||"Being placed in your story…"}</p></div></div><div className="flex"><a aria-label="View file" href={file.file_url} target="_blank" className="p-2 text-[#17211c]/45 hover:text-[#255c45]"><Eye size={17}/></a><a aria-label="Download file" href={`${file.file_url}?download=1`} className="p-2 text-[#17211c]/45 hover:text-[#255c45]"><Download size={17}/></a></div></article>)}</div>:<div className="rounded-2xl border border-dashed border-[#17211c]/15 py-14 text-center"><BookOpen className="mx-auto mb-3 text-[#255c45]/35"/><p className="font-display text-xl">Your first chapter starts here.</p><p className="mt-1 text-xs text-[#17211c]/45">Add a photo, letter, voice note, or belief.</p></div>}</div><div className="rounded-[2rem] border border-[#17211c]/10 bg-[#fbf8f1] p-5 md:p-8"><LegacyChat targetUser={user}/></div></section>
+   </div>
   </div>
+ </main>;
 
-          <div className="grid lg:grid-cols-12 gap-10">
-            
-            {/* Sidebar: Control Center */}
-            <div className="lg:col-span-4 space-y-8">
-              <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] relative overflow-hidden">
-                <div className="absolute -right-10 -top-10 opacity-10 text-blue-400">
-                  <BrainCircuit size={200} />
-                </div>
-                
-                <div className="relative z-10">
-                  <div className="flex items-center gap-2 mb-8">
-                    <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">System Online</span>
-                  </div>
-
-                  <h2 className="text-xl font-bold mb-2">Seed Your Mind</h2>
-                  <p className="text-slate-400 text-xs mb-6 leading-relaxed">Record your voice to help the AI understand your unique perspective.</p>
-                  
-                  <MindSeeder email={user.email} />
-
-                  <div className="my-8 border-t border-slate-800" />
-
-                  <form action={handleUpload} className="space-y-4">
-                    <label htmlFor="vault-file" className="group cursor-pointer block border-2 border-dashed border-slate-700 rounded-3xl p-6 text-center hover:border-blue-500 hover:bg-blue-500/5 transition-all">
-                      <input type="file" name="file" id="vault-file" className="hidden" onChange={(e) => setUploadStatus(e.target.files?.[0]?.name || "")} />
-                      <Upload size={24} className="mx-auto mb-3 text-slate-500 group-hover:text-blue-400 group-hover:scale-110 transition" />
-                      <p className="text-sm font-bold truncate px-2">{uploadStatus || "Archive a Memory"}</p>
-                      <p className="text-[9px] text-slate-500 mt-1 uppercase font-bold tracking-tighter">Document / Image / Audio</p>
-                    </label>
-                    
-                    <button type="submit" disabled={isUploading} className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white py-4 rounded-2xl font-bold transition-all shadow-lg flex items-center justify-center gap-3">
-                      {isUploading ? <Activity size={18} className="animate-spin" /> : <Lock size={18} />}
-                      {isUploading ? "Encrypting..." : "Seal to Vault"}
-                    </button>
-                  </form>
-                </div>
-              </div>
-            </div>
-
-            {/* Main Content: Memories & Chat */}
-            <div className="lg:col-span-8 space-y-10">
-              
-              {/* Memory List */}
-              <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm relative overflow-hidden">
-                <div className="flex items-center justify-between mb-8">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><History size={18}/></div>
-                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Vaulted Assets</h3>
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-3 py-1 rounded-full">{files.length} items</span>
-                </div>
-
-                {files.length > 0 ? (
-                  <div className="grid gap-3 max-h-[440px] overflow-y-auto pr-4 custom-scrollbar">
-                    {files.map((file) => (
-                      <div key={file.id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-transparent hover:border-blue-100 hover:bg-white hover:shadow-md transition-all group">
-                        <div className="flex items-center gap-4 overflow-hidden">
-                          <div className="p-3 bg-white rounded-xl text-slate-400 group-hover:text-blue-600 shadow-sm transition">
-                            <FileText size={20} />
-                          </div>
-                          <div className="overflow-hidden">
-                            <p className="text-sm font-bold text-slate-800 truncate">{file.file_name}</p>
-                            <p className="text-[11px] text-slate-400 italic truncate font-medium">
-                              {file.ai_summary || "AI is indexing this memory..."}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex gap-1 ml-4">
-                          <a href={file.file_url} target="_blank" className="p-2.5 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-xl transition"><Eye size={16} /></a>
-                          <a href={`${file.file_url}?download=1`} className="p-2.5 hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 rounded-xl transition"><Download size={16} /></a>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-20 text-center">
-                    <Sparkles size={48} className="mx-auto mb-4 text-slate-200" />
-                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 italic">Your legacy is a blank canvas.</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Chat Interface */}
-              <div className="bg-slate-100/50 backdrop-blur-sm rounded-[2.5rem] p-1 border border-slate-200 overflow-hidden shadow-inner">
-                <LegacyChat targetUser={user} />
-              </div>
-
-            </div>
-          </div>
-        </section>
-      ) : (
-        /* --- HERO VIEW --- */
-        <div className="overflow-x-hidden">
-          <header className="max-w-6xl mx-auto px-6 pt-32 pb-24 text-center">
-            <div className="inline-flex items-center gap-3 px-4 py-2 bg-white border border-slate-200 text-slate-500 text-[10px] font-black uppercase rounded-full tracking-widest shadow-sm mb-10">
-              <Shield size={12} className="text-blue-600" /> Military-Grade Archival Security
-            </div>
-            
-            <h1 className="text-6xl md:text-8xl font-black leading-[0.95] tracking-tighter text-slate-900 mb-10">
-              Don't let your <br />
-              <span className="text-blue-600 italic">wisdom</span> fade.
-            </h1>
-            
-            <p className="text-lg md:text-xl text-slate-500 max-w-2xl mx-auto mb-12 font-medium leading-relaxed">
-              Katha is a digital sanctuary for your mind—preserving your essence, 
-              philosophy, and memories for the people who matter most.
-            </p>
-
-            <Link href="/login" className="inline-flex items-center gap-3 bg-slate-900 text-white px-12 py-5 rounded-full font-bold hover:bg-blue-600 hover:-translate-y-1 transition-all duration-300 shadow-2xl">
-              Secure Your Legacy <ArrowRight size={20} />
-            </Link>
-
-            {/* Video Preview */}
-            <div className="mt-24 max-w-5xl mx-auto relative group">
-              <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-[4rem] opacity-10 blur-2xl group-hover:opacity-20 transition duration-1000"></div>
-              <div className="relative bg-slate-900 rounded-[3rem] aspect-video border-[12px] border-white shadow-2xl overflow-hidden">
-                <video autoPlay muted={isMuted} loop playsInline className="w-full h-full object-cover opacity-80">
-                  <source src="/img_videos/demo.mp4" type="video/mp4" />
-                </video>
-                <button 
-                  onClick={() => setIsMuted(!isMuted)} 
-                  className="absolute bottom-6 right-6 bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-full text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/20 transition"
-                >
-                  {isMuted ? "Sound Off" : "Audio Active"}
-                </button>
-              </div>
-            </div>
-          </header>
-
-          {/* Social Proof / Philosophy */}
-          <section className="bg-slate-900 py-32 text-white">
-            <div className="max-w-4xl mx-auto px-6 text-center">
-              <Lock className="mx-auto mb-8 text-blue-500" size={40} />
-              <h2 className="text-4xl font-bold mb-8 tracking-tight">The Library of You.</h2>
-              <p className="text-xl text-slate-400 italic leading-relaxed font-serif">
-                "Every person is a living library. Usually, when they pass, the library burns. 
-                Katha is the fireproof vault for your digital heritage."
-              </p>
-            </div>
-          </section>
-        </div>
-      )}
-    </main>
-  );
+ return <main className="overflow-hidden bg-[#fbf8f1] pt-18">
+  <section className="paper-grid soft-noise relative px-5 py-20 md:py-28"><div className="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[1.05fr_.95fr]">
+   <div><p className="mb-6 flex items-center gap-2 text-xs font-bold uppercase tracking-[.2em] text-[#255c45]"><Sparkles size={14}/>A home for what matters</p><h1 className="max-w-3xl font-display text-6xl leading-[.95] tracking-[-.04em] md:text-8xl">Your stories deserve to <em className="text-[#255c45]">stay alive.</em></h1><p className="mt-7 max-w-xl text-lg leading-8 text-[#17211c]/65">Preserve your memories, voice, and hard-won wisdom in one private place—so the people you love can always find their way back to you.</p><div className="mt-9 flex flex-col gap-3 sm:flex-row"><Link href="/register" className="group flex items-center justify-center gap-3 rounded-full bg-[#e86f51] px-7 py-4 text-sm font-bold text-white shadow-[0_12px_30px_rgba(232,111,81,.25)] transition hover:-translate-y-1">Begin your Katha <ArrowRight className="transition group-hover:translate-x-1" size={18}/></Link><Link href="#how" className="flex items-center justify-center gap-2 rounded-full border border-[#17211c]/20 bg-white/50 px-7 py-4 text-sm font-bold"><Play size={16} fill="currentColor"/>See how it feels</Link></div><div className="mt-9 flex flex-wrap gap-x-7 gap-y-2 text-xs text-[#17211c]/50"><span className="flex gap-2"><ShieldCheck size={15} className="text-[#255c45]"/>Private by design</span><span className="flex gap-2"><Heart size={15} className="text-[#e86f51]"/>Made for families</span></div></div>
+   <div className="relative mx-auto w-full max-w-lg"><div className="absolute -inset-8 rounded-full bg-[#dfe7da] blur-3xl"/><div className="animate-drift relative rotate-2 overflow-hidden rounded-[2rem] border-[10px] border-white bg-[#17211c] shadow-2xl"><video autoPlay muted={muted} loop playsInline className="aspect-[4/5] w-full object-cover opacity-75"><source src="/img_videos/demo.mp4" type="video/mp4"/></video><div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#17211c] p-6 pt-24 text-white"><p className="font-display text-2xl">“Tell them about the summer of ’98.”</p><button onClick={()=>setMuted(!muted)} className="mt-4 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-bold backdrop-blur">{muted?"Hear this memory":"Mute audio"}</button></div></div><div className="absolute -bottom-5 -left-5 -rotate-3 rounded-xl bg-[#fff5d8] px-5 py-4 shadow-xl"><p className="font-display text-lg">A voice can be a home.</p></div></div>
+  </div></section>
+  <section id="how" className="bg-[#17211c] px-5 py-24 text-white"><div className="mx-auto max-w-7xl"><div className="grid gap-8 md:grid-cols-2 md:items-end"><div><p className="text-xs font-bold uppercase tracking-[.2em] text-[#e86f51]">Not storage. A living archive.</p><h2 className="mt-4 max-w-2xl font-display text-4xl md:text-6xl">Turn scattered moments into the story of a life.</h2></div><p className="max-w-md text-sm leading-7 text-white/55">Katha listens for meaning, connects memories, and helps future generations explore the person behind the files.</p></div><div className="mt-14 grid gap-px overflow-hidden rounded-[2rem] bg-white/10 md:grid-cols-3">{[[BookOpen,"Gather","Bring in photos, letters, videos, and beliefs."],[Sparkles,"Understand","Katha adds context and finds the threads between moments."],[MessageCircle,"Reconnect","Your family can explore stories through a familiar conversation."]].map(([Icon,title,copy],i)=><div key={String(title)} className="bg-[#1c2922] p-8"><span className="mb-10 block font-display text-5xl text-white/15">0{i+1}</span><Icon className="mb-5 text-[#e86f51]"/><h3 className="font-display text-2xl">{String(title)}</h3><p className="mt-3 text-sm leading-6 text-white/50">{String(copy)}</p></div>)}</div></div></section>
+  <section className="px-5 py-24 text-center"><p className="text-xs font-bold uppercase tracking-[.2em] text-[#255c45]">One story at a time</p><h2 className="mx-auto mt-4 max-w-3xl font-display text-4xl md:text-6xl">What would you want them to remember?</h2><p className="mx-auto mt-5 max-w-xl leading-7 text-[#17211c]/55">Start with one photograph, one lesson, or one story you tell at every family gathering.</p><Link href="/register" className="mt-8 inline-flex items-center gap-3 rounded-full bg-[#255c45] px-8 py-4 text-sm font-bold text-white">Preserve your first story <ArrowRight size={17}/></Link></section>
+ </main>;
 }
-
-export default function Home() {
-  return (
-    <Suspense fallback={<div className="h-screen flex items-center justify-center text-xs font-black uppercase tracking-[0.5em] text-slate-400 animate-pulse">Initializing Vault...</div>}>
-      <HomeContent />
-    </Suspense>
-  );
-}
+export default function Home(){return <Suspense fallback={<div className="grid min-h-screen place-items-center bg-[#fbf8f1] text-sm">Opening Katha…</div>}><HomeContent/></Suspense>}
